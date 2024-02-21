@@ -12,6 +12,7 @@ class Customer(models.Model):
     class Meta:
         ordering = ['created']
 class Order(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.DO_NOTHING)
     item = models.CharField(max_length=10)
     budget = models.DecimalField(max_digits=10, decimal_places=2)
     time = models.DateTimeField(auto_now_add=True)
