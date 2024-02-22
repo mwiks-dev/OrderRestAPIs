@@ -11,9 +11,10 @@ class User(AbstractUser):
             return self.email
 
 class Customer(models.Model):
-    name = models.CharField(max_length = 10)
+    name = models.CharField(max_length = 50)
     code = models.TextField()
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    phone_number = models.CharField(max_length=10, default='0114680821')
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

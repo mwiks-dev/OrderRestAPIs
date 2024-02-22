@@ -5,6 +5,8 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = ['id', 'name', 'code', 'user', 'created']
+        read_only_fields = ('user',)  # Prevent the API consumer from setting the `user` field directly
+
 
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:

@@ -8,9 +8,10 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from .serializers import CustomerSerializer, OrderSerializer
 from django.contrib.auth.mixins import LoginRequiredMixin
+from .models import Customer, Order
 
 
 oauth = OAuth()
@@ -44,10 +45,10 @@ def callback(request):
     request.session["user"] = token
 
     userinfo = token.get('userinfo',{})
-    print(userinfo)
+    # print(userinfo)
 
     # Extract user details from userinfo
-    # id = userinfo.get('sub')  # Auth0 user ID
+    code = userinfo.get('sub')  # Auth0 user ID
     username = userinfo.get('nickname')
     email = userinfo.get('email')
     first_name = userinfo.get('given_name','')
@@ -71,6 +72,13 @@ def callback(request):
         user.first_name = first_name
         user.last_name = second_name
         user.save()
+
+    # customer, customer_created = Customer.objects.get_or_create(user=user)
+    # customer.name = first_name + ' ' + second_name
+    # customer.code = code
+    # customer.save()
+
+
 
     # Log the user in (you might need to customize this part)
     auth_login(request, user,backend='django.contrib.auth.backends.ModelBackend')
@@ -98,15 +106,25 @@ def logout(request):
         ),
     )
 
-class CustomerCreateView(LoginRequiredMixin,APIView):
+class CustomerCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]  # Ensure only authenticated users can access this view
+
 
     def post(self, request, *args, **kwargs):
+        user = request.user
         serializer = CustomerSerializer(data=request.data)
+        
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            # Check if the customer already exists for this user
+            customer, created = Customer.objects.get_or_create(user=user, defaults=serializer.validated_data)
+            if not created:
+                # Update existing customer data if needed
+                for key, value in serializer.validated_data.items():
+                    setattr(customer, key, value)
+                customer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 class OrderCreateView(LoginRequiredMixin,APIView):
 
     def post(self, request, *args, **kwargs):
