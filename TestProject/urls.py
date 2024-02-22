@@ -22,7 +22,10 @@ from django.contrib import admin
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('', include('TestApp.urls'))
+    path('', include('TestApp.urls')),
+
+    # path('', include('social_django.urls')),
+
 
 
 ]
