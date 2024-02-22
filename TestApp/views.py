@@ -12,7 +12,8 @@ from rest_framework import status, permissions
 from .serializers import CustomerSerializer, OrderSerializer
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Customer, Order
-from django.shortcuts import get_object_or_404
+from .utils import send_order_confirmation_sms  # Make sure to import the utility function
+
 
 
 
@@ -127,11 +128,19 @@ class OrderCreateView(APIView):
             user = request.user
 
             # Check if the user has an associated Customer profile
-            customer = get_object_or_404(Customer, user=user)
-
+            try:
+                customer = Customer.objects.get(user=user)
+            except Customer.DoesNotExist:
+                return Response({"error": "Please create a customer profile before creating an order."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            
             serializer = OrderSerializer(data=request.data)
             if serializer.is_valid():
                 # Since the customer field is read-only, we need to add it manually after validation
                 order = serializer.save(customer=customer)
+                # Send SMS notification
+                message = f"Hi {customer.name}, your order for {order.item} has been placed successfully."
+                send_order_confirmation_sms(customer.phone_number, message)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
