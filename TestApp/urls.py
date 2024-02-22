@@ -8,5 +8,6 @@ urlpatterns = [
     path("logout", views.logout, name="logout"),
     path("callback", views.callback, name="callback"),
     path('api/customer/', CustomerCreateView.as_view(), name='create-customer'),
+    path('api/order/', OrderCreateView.as_view(), name='create-order'),
     path('orders/', OrderCreateView.as_view(), name='create-order'),
 ]

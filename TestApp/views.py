@@ -12,6 +12,8 @@ from rest_framework import status, permissions
 from .serializers import CustomerSerializer, OrderSerializer
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Customer, Order
+from django.shortcuts import get_object_or_404
+
 
 
 oauth = OAuth()
@@ -73,13 +75,6 @@ def callback(request):
         user.last_name = second_name
         user.save()
 
-    # customer, customer_created = Customer.objects.get_or_create(user=user)
-    # customer.name = first_name + ' ' + second_name
-    # customer.code = code
-    # customer.save()
-
-
-
     # Log the user in (you might need to customize this part)
     auth_login(request, user,backend='django.contrib.auth.backends.ModelBackend')
 
@@ -125,11 +120,18 @@ class CustomerCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-class OrderCreateView(LoginRequiredMixin,APIView):
+class OrderCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]  # Ensure only authenticated users can access this view
 
     def post(self, request, *args, **kwargs):
-        serializer = OrderSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            user = request.user
+
+            # Check if the user has an associated Customer profile
+            customer = get_object_or_404(Customer, user=user)
+
+            serializer = OrderSerializer(data=request.data)
+            if serializer.is_valid():
+                # Since the customer field is read-only, we need to add it manually after validation
+                order = serializer.save(customer=customer)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
