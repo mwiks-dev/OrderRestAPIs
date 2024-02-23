@@ -10,12 +10,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from .serializers import CustomerSerializer, OrderSerializer
-from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Customer, Order
-from .utils import send_order_confirmation_sms  # Make sure to import the utility function
-
-
-
+from .utils import send_order_confirmation_sms  
 
 oauth = OAuth()
 
@@ -51,7 +47,7 @@ def callback(request):
     # print(userinfo)
 
     # Extract user details from userinfo
-    code = userinfo.get('sub')  # Auth0 user ID
+    # code = userinfo.get('sub')  # Auth0 user ID
     username = userinfo.get('nickname')
     email = userinfo.get('email')
     first_name = userinfo.get('given_name','')
@@ -67,16 +63,14 @@ def callback(request):
     except User.DoesNotExist:
         # No user was found, so create a new user
         user = User.objects.create_user(username=username, email=email, first_name=first_name, last_name=second_name)
-        # Here, you might set other fields on the user object before saving
         user.set_unusable_password()  # Optional: Set an unusable password since auth is handled by Auth0
         user.save()
     else:
-        # User exists, so you might want to update any details
+        # User exists, update any details
         user.first_name = first_name
         user.last_name = second_name
         user.save()
 
-    # Log the user in (you might need to customize this part)
     auth_login(request, user,backend='django.contrib.auth.backends.ModelBackend')
 
     return redirect(request.build_absolute_uri(reverse("index")))
