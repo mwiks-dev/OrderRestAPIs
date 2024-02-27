@@ -10,8 +10,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from .serializers import CustomerSerializer, OrderSerializer
-from .models import Customer, Order
+from .models import Customer
 from .utils import send_order_confirmation_sms  
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 
 oauth = OAuth()
 
@@ -96,6 +99,7 @@ def logout(request):
         ),
     )
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CustomerCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]  # Ensure only authenticated users can access this view
 
@@ -114,7 +118,8 @@ class CustomerCreateView(APIView):
                 customer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+@method_decorator(csrf_exempt, name='dispatch')  
 class OrderCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]  # Ensure only authenticated users can access this view
 
